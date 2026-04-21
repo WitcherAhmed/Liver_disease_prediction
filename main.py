@@ -19,7 +19,7 @@ class LiverInput(BaseModel):
     A_G_Ratio: float   # renamed because "/" is invalid in variable names
 
 # Load your trained model
-liver_model = pickle.load(open('E:/Work/Python/Liver_pred_API/liver_disease_model.pkl', 'rb'))
+liver_model = pickle.load(open('liver_disease_model.pkl', 'rb'))
 
 @app.post('/liver_disease_prediction')
 def liver_pred(input_parameters: LiverInput):
