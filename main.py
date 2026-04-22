@@ -1,14 +1,13 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import pickle
-import json
 
 app = FastAPI()
 
-# Define input schema based on your dataset
+# ✅ Input schema
 class LiverInput(BaseModel):
     Age: int
-    Gender: int   # Encode: Male=1, Female=0 (or whatever you used)
+    Gender: int   # 1 = Male, 0 = Female (adjust if needed)
     TB: float
     DB: float
     Alkphos: float
@@ -16,34 +15,47 @@ class LiverInput(BaseModel):
     Sgot: float
     TP: float
     ALB: float
-    A_G_Ratio: float   # renamed because "/" is invalid in variable names
+    A_G_Ratio: float
 
-# Load your trained model
-liver_model = pickle.load(open('liver_disease_model.pkl', 'rb'))
+# ✅ Load model safely
+try:
+    liver_model = pickle.load(open('liver_disease_model.pkl', 'rb'))
+except Exception as e:
+    liver_model = None
+    print("MODEL LOAD ERROR:", e)
 
-@app.post('/liver_disease_prediction')
-def liver_pred(input_parameters: LiverInput):
-    
-    input_data = input_parameters.json()  # type: ignore
-    input_dictionary = json.loads(input_data)
+# ✅ Root endpoint (fixes Railway issue)
+@app.get("/")
+def home():
+    return {"status": "Liver Disease API is running"}
 
-    age = input_dictionary['Age']
-    gender = input_dictionary['Gender']
-    tb = input_dictionary['TB']
-    db = input_dictionary['DB']
-    alkphos = input_dictionary['Alkphos']
-    sgpt = input_dictionary['Sgpt']
-    sgot = input_dictionary['Sgot']
-    tp = input_dictionary['TP']
-    alb = input_dictionary['ALB']
-    ag_ratio = input_dictionary['A_G_Ratio']
+# ✅ Prediction endpoint
+@app.post("/liver_disease_prediction")
+def predict(data: LiverInput):
 
-    # IMPORTANT: match the exact order used during training
-    input_list = [age, gender, tb, db, alkphos, sgpt, sgot, tp, alb, ag_ratio]
+    if liver_model is None:
+        return {"error": "Model not loaded properly"}
 
-    prediction = liver_model.predict([input_list])
+    try:
+        input_list = [
+            data.Age,
+            data.Gender,
+            data.TB,
+            data.DB,
+            data.Alkphos,
+            data.Sgpt,
+            data.Sgot,
+            data.TP,
+            data.ALB,
+            data.A_G_Ratio
+        ]
 
-    if prediction[0] == 1:
-        return {"result": "The person has liver disease"}
-    else:
-        return {"result": "The person is healthy"}
+        prediction = liver_model.predict([input_list])
+
+        return {
+            "prediction": int(prediction[0]),
+            "result": "Liver Disease" if prediction[0] == 1 else "Healthy"
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
