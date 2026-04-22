@@ -4,10 +4,10 @@ import pickle
 
 app = FastAPI()
 
-# ✅ Input schema
+
 class LiverInput(BaseModel):
     Age: int
-    Gender: int   # 1 = Male, 0 = Female (adjust if needed)
+    Gender: int   # 1 = Male, 0 = Female
     TB: float
     DB: float
     Alkphos: float
@@ -17,19 +17,18 @@ class LiverInput(BaseModel):
     ALB: float
     A_G_Ratio: float
 
-# ✅ Load model safely
+
 try:
     liver_model = pickle.load(open('liver_disease_model.pkl', 'rb'))
 except Exception as e:
     liver_model = None
     print("MODEL LOAD ERROR:", e)
 
-# ✅ Root endpoint (fixes Railway issue)
 @app.get("/")
 def home():
     return {"status": "Liver Disease API is running"}
 
-# ✅ Prediction endpoint
+
 @app.post("/liver_disease_prediction")
 def predict(data: LiverInput):
 
